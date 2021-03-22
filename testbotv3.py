@@ -1,3 +1,4 @@
+#i added this line
 '''
 
 General things to add:
@@ -8,13 +9,13 @@ General things to add:
     find out if when cur gets filled ? i think shouold be fine cause everythgin time i use data i call new fetch command
 
     fix checks
-    
+
     maybe make the functions into a class for easier read
     maybe make a custom help/advanced help
     handle the draw case
     ???
     Profit?
-    
+
     UNDO
 '''
 #also need help but thats anotha issue
@@ -52,7 +53,7 @@ ongoingGames = []
 
 load_dotenv()
 
-#if arg log is sent when running, then output should be put into a log file 
+#if arg log is sent when running, then output should be put into a log file
 if len(sys.argv) >= 2 and sys.argv[1] == "log":
     sys.stdout = sys.stderr = open('logfile.log', 'a')
 
@@ -108,7 +109,7 @@ async def on_ready():
 async def on_guild_join(guild):
     print("joined new guild",guild,guild.id)
     return
-    
+
 
 @client.command(
     help="Used to challenge another user in a standard chess game",
@@ -117,11 +118,11 @@ async def on_guild_join(guild):
 )
 async def challenge(ctx, *args):
     print("challenge read from", ctx.author)
-    
+
     if len(args) == 0:
         return
-        
-   
+
+
     if not ctx.message.mention_everyone:
         if ctx.bot.user in ctx.message.mentions:
             #check if game already in channel
@@ -133,7 +134,7 @@ async def challenge(ctx, *args):
         else:
             now = datetime.now()
             challenges.append((ctx.message.mentions, ctx.author, ctx.channel, now, args[-1]))
-    
+
 
 @client.command(
     help="Accepts a challenge from another user",
@@ -145,23 +146,23 @@ async def accept(ctx, *args):
 
     print("accept read from", ctx.author)
     now = datetime.now() #used to clear out old challenges
-    
+
     for idx in range(len(challenges)):
         challenge = challenges[idx]
-        
+
         if (challenge[3]-now) > timedelta(minutes=15):
             print("challenge timed out")
             challenges.pop(idk)
             continue
-            
+
         #first see if the challenge is the same channel as the accept
         if challenge[2] == ctx.channel:
-            
+
             #if there is a game already in the channel, do not start another
             for game in ongoingGames:
                 if game.channel == ctx.channel:
                     return
-            
+
             #see if the accepter is one of the people challenged
             for mention in challenge[0]:
                 if mention.id == ctx.author.id:
@@ -181,7 +182,7 @@ async def accept(ctx, *args):
                                 await ongoingGames[-1].start_game()
                                 challenges.pop(idx)
                                 return
-        
+
 
 @client.command(
     help="Plays the move sent by the user in the form of Standard Algebraic Notation",
@@ -217,14 +218,14 @@ async def draw(ctx, *args):
         await end_game(ongoingGames[idx],fin,ctx.guild,ctx.channel)
         ongoingGames.pop(idx)
 
-async def end_game(cur_game, fin, guild, channel):    
+async def end_game(cur_game, fin, guild, channel):
     if fin[1]:
         await cur_game.channel.send("Game was tied")
     elif fin[0]:
         await cur_game.channel.send("White Victory")
     else:
         await cur_game.channel.send("Black Victory")
-       
+
     #if db is up, save to db
     if CUR is not None:
         #if player is 0, then played against the bot
@@ -259,8 +260,8 @@ async def prefix(ctx, pref = None):
             print("prefix update error")
             #if e.
             #CUR.execute("insert into GuildCommand(GuildID,Command) values(%d,%s)", (ctx.guild.id,pref[0]))
-            
-   
+
+
 @client.command(
     help="Displays the previous matches played by the caller",
     brief="Returns last few matches of the caller",
@@ -278,13 +279,13 @@ async def history(ctx, *args):
                 FILE.write(cairosvg.svg2png(chess.svg.board(board=chess.pgn.read_game(CUR[i][0]), size=500)))
                 self.prev = await ctx.send(file=discord.File("board.png"))
                 FILE.close()
-        
-        else: #complete 
+
+        else: #complete
             for men in ctx.message.mentions:
                 if men.id > ctx.author.id:
                     CUR.execute(f"Select PGN from Matches WHERE (User1ID={ctx.author.id} OR User2ID={ctx.author.id}) AND GuildId={ctx.guid.id}")
                 return
-            
+
     return
 
 
@@ -324,7 +325,7 @@ async def analyze(ctx, *args):
                 await ctx.send("Unable to analize game, rate limit has been reached. You can get the pgn and upload yourself by calling pgn and going to https://lichess.org/paste")
         else:
             await ctx.send(req[1])
-        
+
     return
 
 
@@ -341,10 +342,10 @@ async def settings(ctx, *args):
         return
         """
         try:
-        
+
             if len(args) == 0:
                 return
-                
+
             for arg in args:
                 update_str = ""
                 arg = arg.split("=")
@@ -357,7 +358,7 @@ async def settings(ctx, *args):
             CUR.execute(f"update UserSettings SET Command=\"{args[0][0]}\" WHERE GuildID={ctx.guild.id}")
         except mariadb.Error as e:
             CUR.execute("insert into UserSettings(UserID,Coord,Checks,lastmove) values(%d,%s)", (ctx.user.id,))
-            
+
         await ctx.channel.send("Prefix updated to {}".format(args[0][0]))
         """
 
@@ -380,13 +381,13 @@ async def pgn(ctx, *args):
             await ctx.send(f"Cannot find a game number {num}")
             return
         await ctx.send(req[0])
-        
+
     return
 
 
 
 class ChessGame:
-     
+
     #Contructor
     def __init__(self, pC, pA, chan, w):
         if w == "black":
@@ -395,7 +396,7 @@ class ChessGame:
         else:
             self.playerWhite = pC
             self.playerBlack = pA
-                 
+
         self.channel = chan
         self.white = w
         self.board = chess.Board()
@@ -412,7 +413,7 @@ class ChessGame:
         self.draw_offer_side = None #white = true, black = false
         self.pWhiteSettings = None
         self.pBlackSettings = None
-        
+
         if CUR is not None:
             if self.playerWhite != 0:
                 CUR.execute(f"SELECT Coord,Checks,lastmove from UserSettings WHERE UserID={self.playerWhite.id}")
@@ -430,9 +431,9 @@ class ChessGame:
         self.turnMsg = await self.channel.send(f"<@!{self.playerWhite.id}> to move")
         self.prev = await self.channel.send(file=discord.File("board.png"))
         FILE.close()
-        
-    
-    #Parses the input, plays the board on the internal board, then creates and sends the board image 
+
+
+    #Parses the input, plays the board on the internal board, then creates and sends the board image
     async def play_move(self, stri, id, msg):
         try:
             if (self.board.turn == chess.WHITE and self.playerWhite.id == id) or (self.board.turn == chess.BLACK and self.playerBlack.id  == id):
@@ -447,7 +448,7 @@ class ChessGame:
                     return
                     '''if self.board.can_claim_draw() and ((self.board.turn == chess.WHITE and self.playerWhite.id == id)  or (self.board.turn == chess.BLACK and self.playerBlack.id == id)):
                         self.board.
-                    
+
                     if self.draw_offer:
                         if (self.draw_offer_side and self.playerBlack.id == id) or (not self.draw_offer_side and self.playerWhite.id == id):
                             #handle draw
@@ -458,23 +459,23 @@ class ChessGame:
                                 self.channel.send(f"Draw has been offered from <@!{self.playerWhite.id}>")
                             else:
                                 self.channel.send(f"Draw has been offered from <@!{self.playerBlack.id}>")'''
-                    
+
                     #process a draw
                 else:
                     self.board.push_san(stri)
-                
+
                 #if here move got played correctly
                 #so, delete the error message and all attempts
                 if self.prevErr is not None:
                     await clear_errors()
 
-                
+
                 #am able to control the time the control difficulty now that it is awaited
                 if self.playerWhite == 0 or self.playerBlack == 0:
                     mv = await ENG.play(self.board, chess.engine.Limit(time=0.5))
                     self.board.push(mv.move)
-                
-                
+
+
                 if self.board.turn == chess.WHITE:
                     self.turnMsg2 = await self.channel.send(f"<@!{self.playerWhite.id}> to move")
                     if self.pWhiteSettings is None:
@@ -487,7 +488,7 @@ class ChessGame:
                             self.svg.check = self.board.checkers()
                         if self.pWhiteSettings[2]:
                             self.svg.lastmove = self.board.peek()
-                            
+
                 else:
                     self.turnMsg2 = await self.channel.send(f"<@!{self.playerBlack.id}> to move")
                     if self.pBlackSettings is None:
@@ -499,23 +500,23 @@ class ChessGame:
                         if self.pBlackSettings[1]:
                             self.svg.check = self.board.checkers()
                         if self.pBlackSettings[2]:
-                            self.svg.lastmove = self.board.peek()                        
-                    
+                            self.svg.lastmove = self.board.peek()
+
                 FILE = open("board.png","wb")
                 FILE.write(cairosvg.svg2png(self.svg))
                 self.prev2 = await self.channel.send(file=discord.File("board.png"))
                 FILE.close()
-                
+
                 if self.prev is not None:
                     await self.prev.delete()
                 await msg.delete()
                 self.prev = self.prev2
-                
+
                 if self.turnMsg is not None:
                     await self.turnMsg.delete()
                 self.turnMsg = self.turnMsg2
-                
-                
+
+
                 if self.board.is_game_over():
                     return await end_game()
                 else:
@@ -532,26 +533,26 @@ class ChessGame:
             self.prevErr2 = None
             self.attempts.append(msg)
             return None
-      
-      
+
+
     async def clear_errors():
         await self.prevErr.delete()
         self.prevErr = None
         for m in range(len(self.attempts)):
             await self.attempts[m].delete()
         self.attempts = []
-    
+
     async def end_game():
-        await self.channel.send("Game is over")            
+        await self.channel.send("Game is over")
         self.pgn = chess.pgn.Game.from_board(self.board)
         self.pgn.headers.__delitem__("Event")
         self.pgn.headers.__delitem__("Site")
         self.pgn.headers.__delitem__("Round")
-        self.pgn.headers.__setitem__("Date",datetime.now().strftime("%Y.%m.%d"))       
+        self.pgn.headers.__setitem__("Date",datetime.now().strftime("%Y.%m.%d"))
         self.pgn.headers.__setitem__("White","Scuffed Stockfish" if self.playerWhite == 0 else self.playerWhite.name)
         self.pgn.headers.__setitem__("Black","Scuffed Stockfish" if self.playerBlack == 0 else self.playerBlack.name)
-        
-        
+
+
         if self.board.result() == "1/2-1/2":
             return (0,1)
         if self.board.result() == "1-0":
