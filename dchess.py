@@ -1,24 +1,3 @@
-'''
-
-General things to add:
-
-    Database and that stuff
-        users game history, settings (how to set settings)
-
-    find out if when cur gets filled ? i think shouold be fine cause everythgin time i use data i call new fetch command
-
-    fix checks
-
-    maybe make the functions into a class for easier read
-    maybe make a custom help/advanced help
-    handle the draw case
-    ???
-    Profit?
-
-    UNDO
-'''
-#also need help but thats anotha issue
-
 #discord imports
 import discord
 from discord.ext import commands
@@ -40,36 +19,47 @@ from dotenv import load_dotenv
 #local imports
 from chess_game import ChessGame
 
-#@commands.guild_only() - useful maybe
-
 class chess_cog(commands.Cog):
+
     def __init__(self, bot):
+        #file used to send images to channels
         self.FILE = None
+
+        #last request time which got rate limited, saved in order to see wait out rate limit
         self.REQ_TIME = None
-        self.CUR = bot.CUR 
-        self.CONN = bot.CONN 
+
+        #maria db connectors
+        self.CUR = bot.CUR
+        self.CONN = bot.CONN
+
+        #chess engine variables
         self.transport = None
         self.engine = None
+
+        #internal variables used to store the games and challenges
         self.challenges = []
         self.ongoing_games = []
-    
-    
+
+    #used to async intialize engine when needed
     async def init_engine(self):
         self.transport, self.engine = await chess.engine.popen_uci("/usr/games/stockfish")
-    
+
+    #command for challenging users
     @commands.command(
         help="Used to challenge another user in a standard chess game",
         brief="Used to start a game of chess.",
         aliases=['c']
     )
     async def challenge(self, ctx, *args):
+        #should be log
         print("challenge read from", ctx.author)
-
+        #must challenge another user
         if len(args) == 0:
             return
 
-
+        #cannot challenge everyone
         if not ctx.message.mention_everyone:
+            #if the bot is being challenged start the game
             if ctx.bot.user in ctx.message.mentions:
                 #check if game already in channel
                 for g in self.ongoing_games:
@@ -78,10 +68,11 @@ class chess_cog(commands.Cog):
                 self.ongoing_games.append(ChessGame(ctx.author, 0, ctx.channel, args[-1]))
                 await self.ongoing_games[-1].start_game()
             else:
+                #if the challenge is not the bot, just add the game to the challenges
                 now = datetime.now()
                 self.challenges.append((ctx.message.mentions, ctx.author, ctx.channel, now, args[-1]))
 
-
+    #process the accept command to accept a challenge
     @commands.command(
         help="Accepts a challenge from another user",
         brief="Accepts a pending challenge",
@@ -89,10 +80,11 @@ class chess_cog(commands.Cog):
         aliases=['a']
     )
     async def accept(self, ctx, *args):
-
+        #should be log
         print("accept read from", ctx.author)
         now = datetime.now() #used to clear out old self.challenges
 
+        #go through the challenges
         for idx in range(len(self.challenges)):
             challenge = self.challenges[idx]
 
@@ -112,14 +104,16 @@ class chess_cog(commands.Cog):
                 #see if the accepter is one of the people challenged
                 for mention in challenge[0]:
                     if mention.id == ctx.author.id:
+
                         #see if accepter @'d someone, if not just accept first challenge
-                        if(len(ctx.message.mentions)) == 0:
+                       if(len(ctx.message.mentions)) == 0:
                             print("game start between ", ctx.author, challenge[1], "in channel", ctx.channel)
                             self.ongoing_games.append(ChessGame(challenge[1], ctx.author, ctx.channel, challenge[4]))
                             await self.ongoing_games[-1].start_game()
                             self.challenges.pop(idx)
                             return
                         else:
+
                             #find the challenger who the accepter @'d
                             for mention2 in ctx.message.mentions:
                                 if mention2.id == challenge[1]:
@@ -129,7 +123,7 @@ class chess_cog(commands.Cog):
                                     self.challenges.pop(idx)
                                     return
 
-
+    #process play command
     @commands.command(
         help="Plays the move sent by the user in the form of Standard Algebraic Notation",
         brief="Plays a move",
@@ -138,24 +132,29 @@ class chess_cog(commands.Cog):
     async def play(self, ctx, *args):
         fin = None
         idx = 0
+        #see if there is a game in the channel
         for idx in range(len(self.ongoing_games)):
             if self.ongoing_games[idx].channel == ctx.channel:
                 #if bot is playing, send the bot move.
                 if self.ongoing_games[idx].bot:
+                    #if engine has not been initialized
                     if self.engine == None:
                         await self.init_engine()
                         print("engine inti")
-                        
+                    #play the user move, and give the engine in order to play the engine move also.
                     fin = await self.ongoing_games[idx].play_move(args[0], ctx.author.id, ctx.message, self.engine)
                 else:
+                    #play the given move
                     fin = await self.ongoing_games[idx].play_move(args[0], ctx.author.id, ctx.message, None)
 
         #if fin has data then the game ended
         if fin is not None:
+            #process the game ending
             await self.end_game(self.ongoing_games[idx],fin)
+            #remove the game from the ongoing games in order to allow for another to start in the channel
             self.ongoing_games.pop(idx)
 
-
+    #process a draw
     @commands.command(
         help="If both players offer draw then game is ended on a draw, to recind a draw, use the command a second time",
         brief="Offers/Accept/Recinds draw",
@@ -172,6 +171,7 @@ class chess_cog(commands.Cog):
             await end_game(self.ongoing_games[idx],fin,ctx.guild,ctx.channel)
             self.ongoing_games.pop(idx)
 
+    #helper function which process the game being ended
     async def end_game(self, cur_game, fin, guild, channel):
         if fin[1]:
             await cur_game.channel.send("Game was tied")
@@ -313,4 +313,3 @@ class chess_cog(commands.Cog):
 
 def setup(bot):
     bot.add_cog(chess_cog(bot))
-

@@ -26,14 +26,15 @@ class ChessGame:
         else:
             self.playerWhite = pC
             self.playerBlack = pA
-        
+
         if self.playerWhite == 0 or self.playerBlack == 0:
             self.bot = True
         else:
             self.bot = False
-            
+
+        #channel in which game is occuring
         self.channel = chan
-        self.white = w
+        #chess board object in which the game is being played
         self.board = chess.Board()
         self.attempts = []
         self.prevErr = None
@@ -167,4 +168,3 @@ class ChessGame:
             return (1,0)
         else:
             return (0,0)
-

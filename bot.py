@@ -1,25 +1,9 @@
 '''
 
 General things to add:
-
-    Database and that stuff
-        users game history, settings (how to set settings)
-
-    find out if when cur gets filled ? i think shouold be fine cause everythgin time i use data i call new fetch command
-
-    fix checks
-
-    maybe make the functions into a class for easier read
     maybe make a custom help/advanced help
     handle the draw case
-    ???
-    Profit?
-
-    UNDO
 '''
-#also need help but thats anotha issue
-#@commands.guild_only() - useful maybe
-
 
 #discord imports
 import discord
@@ -34,11 +18,12 @@ from datetime import datetime,timedelta
 import requests
 import mariadb
 from dotenv import load_dotenv
+
 #local imports
 import dchess
 #global variables
-load_dotenv()
 
+load_dotenv()
 #if arg log is sent when running, then output should be put into a log file
 if len(sys.argv) >= 2 and sys.argv[1] == "log":
     sys.stdout = sys.stderr = open('logfile.log', 'a')
@@ -86,7 +71,6 @@ class DiscordBot(commands.Bot):
         self.CONN = None
         self.CUR = None
         self.load_db()
-        self.banned = ["😂","😹","🤣"]
         self.load_extension("chess_cog")
 
     def load_db(self):
@@ -98,40 +82,23 @@ class DiscordBot(commands.Bot):
             self.CUR = CONN.cursor()
         except mariadb.Error as e:
             print("Cannot connecto the the database")
-        
+
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
         await self.change_presence(activity = discord.Game("Chess"))
 
+    #this should log instead of printing, learn log
     async def on_guild_join(self, guild):
         print("joined new guild", guild, guild.id)
-        
-        
+
+    #
     async def on_message(self, m):
         if m.author == self.user:
             return
         await self.process_commands(m)
 
-
-
-    '''@.command(
-        help="Changes the prefix used to use the bot's commands",
-        brief="Changes the bot's prefix",
-        usage="prefix (char) - where char is the prefix you would like the bot to recognize"
-    )
-    async def prefix(self, ctx, pref = None):
-        if self.CUR is None:
-            await ctx.channel.send("Database is currently down, the command character is not able to be updated.")
-        else:
-            if pref is None or not ctx.author.guild_permissions.manage_guild:
-                return
-            try:
-                self.CUR.execute(f"INSERT INTO GuildCommand(GuildID,Command) VALUES({ctx.guild.id},\'{pref[0]}\') ON DUPLICATE KEY UPDATE Command=\'{pref[0]}\'")
-                await ctx.channel.send(f"Prefix updated to {pref[0]}")
-            except mariadb.Error as e:
-                print("prefix update error")'''
-
+    #Starts the bot
     def run(self):
         try:
             super().run(os.getenv("DISCORD_TOKEN"), reconnect=True)
@@ -142,4 +109,3 @@ class DiscordBot(commands.Bot):
 #Run
 bot = DiscordBot()
 bot.run()
-#client.run(os.getenv("DISCORD_TOKEN"))
