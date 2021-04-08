@@ -161,9 +161,10 @@ class chess_cog(commands.Cog):
         aliases=["d"]
     )
     async def draw(self, ctx, *args):
+        #see if can just replace the message with draw instead of rewritting play function
         fin = None
         idx = 0
-        for idx in range(len(self.ongoing_games)):
+        for idx in range(len(self.ongoing_games))
             if self.ongoing_games[idx].channel == ctx.channel:
                 fin = await self.ongoing_games[idx].play_move("draw", ctx.author.id, ctx.message)
 

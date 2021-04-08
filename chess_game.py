@@ -36,15 +36,19 @@ class ChessGame:
         self.channel = chan
         #chess board object in which the game is being played
         self.board = chess.Board()
+
+        #Information stored in order to delete, in order to leave the footprint small
         self.attempts = []
         self.prevErr = None
         self.prevErr2 = None
         self.prev = None
         self.prev2 = None
-        self.svg = None
-        self.pgn = None
         self.turnMsg = None
         self.turnMsg2 = None
+
+        #saves the svg and pgn of the game, in order to save in db
+        self.svg = None
+        self.pgn = None
         self.draw_offer = False
         self.draw_offer_side = None #white = true, black = false
 
@@ -85,7 +89,6 @@ class ChessGame:
                             else:
                                 self.channel.send(f"Draw has been offered from <@!{self.playerBlack.id}>")'''
 
-                    #process a draw
                 elif stri_l == "ff" or stri_l == "forfeit" or stri_l == "resign":
                     return
 
