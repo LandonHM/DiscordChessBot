@@ -104,16 +104,14 @@ class chess_cog(commands.Cog):
                 #see if the accepter is one of the people challenged
                 for mention in challenge[0]:
                     if mention.id == ctx.author.id:
-
                         #see if accepter @'d someone, if not just accept first challenge
-                       if(len(ctx.message.mentions)) == 0:
+                        if(len(ctx.message.mentions)) == 0:
                             print("game start between ", ctx.author, challenge[1], "in channel", ctx.channel)
                             self.ongoing_games.append(ChessGame(challenge[1], ctx.author, ctx.channel, challenge[4]))
                             await self.ongoing_games[-1].start_game()
                             self.challenges.pop(idx)
                             return
                         else:
-
                             #find the challenger who the accepter @'d
                             for mention2 in ctx.message.mentions:
                                 if mention2.id == challenge[1]:
@@ -164,9 +162,9 @@ class chess_cog(commands.Cog):
         #see if can just replace the message with draw instead of rewritting play function
         fin = None
         idx = 0
-        for idx in range(len(self.ongoing_games))
+        for idx in range(len(self.ongoing_games)):
             if self.ongoing_games[idx].channel == ctx.channel:
-                fin = await self.ongoing_games[idx].play_move("draw", ctx.author.id, ctx.message)
+                fin = await self.ongoing_games[idx].play_move("draw", ctx.author.id, ctx.message, self.engine)
 
         if fin is not None:
             await end_game(self.ongoing_games[idx],fin,ctx.guild,ctx.channel)

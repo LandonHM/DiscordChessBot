@@ -71,7 +71,7 @@ class DiscordBot(commands.Bot):
         self.CONN = None
         self.CUR = None
         self.load_db()
-        self.load_extension("chess_cog")
+        self.load_extension("dchess")
 
     def load_db(self):
         #connect to the database
