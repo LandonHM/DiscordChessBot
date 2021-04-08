@@ -13,9 +13,6 @@ import os
 import sys
 import re
 from datetime import datetime,timedelta
-import requests
-import mariadb
-from dotenv import load_dotenv
 
 class ChessGame:
     #Contructor
@@ -74,20 +71,23 @@ class ChessGame:
                 elif stri_l == "castlelong":
                     self.board.push_san("O-O-O")
                 elif stri_l == "draw":
-                    return
-                    '''if self.board.can_claim_draw() and ((self.board.turn == chess.WHITE and self.playerWhite.id == id)  or (self.board.turn == chess.BLACK and self.playerBlack.id == id)):
-                        self.board.
+                    if self.board.can_claim_draw() and ((self.board.turn == chess.WHITE and self.playerWhite.id == id)  or (self.board.turn == chess.BLACK and self.playerBlack.id == id)):
+                        return await self.end_game(True)
 
                     if self.draw_offer:
                         if (self.draw_offer_side and self.playerBlack.id == id) or (not self.draw_offer_side and self.playerWhite.id == id):
                             #handle draw
+                            return await self.end_game(True)
                     else:
                         if self.draw_offer_side is None:
                             if self.playerWhite.id == id:
-                                self.
+                                self.draw_offer = True
+                                self.draw_offer_side = True
                                 self.channel.send(f"Draw has been offered from <@!{self.playerWhite.id}>")
                             else:
-                                self.channel.send(f"Draw has been offered from <@!{self.playerBlack.id}>")'''
+                                self.draw_offer = True
+                                self.draw_offer_side = False
+                                self.channel.send(f"Draw has been offered from <@!{self.playerBlack.id}>")
 
                 elif stri_l == "ff" or stri_l == "forfeit" or stri_l == "resign":
                     return
@@ -130,7 +130,7 @@ class ChessGame:
 
 
                 if self.board.is_game_over():
-                    return await self.end_game()
+                    return await self.end_game(False)
                 else:
                     return None
             else:
@@ -154,7 +154,7 @@ class ChessGame:
             await self.attempts[m].delete()
         self.attempts = []
 
-    async def end_game(self):
+    async def end_game(self, draw):
         await self.channel.send("Game is over")
         self.pgn = chess.pgn.Game.from_board(self.board)
         self.pgn.headers.__delitem__("Event")
@@ -165,7 +165,8 @@ class ChessGame:
         self.pgn.headers.__setitem__("Black","Stockfish" if self.playerBlack == 0 else self.playerBlack.name)
 
 
-        if self.board.result() == "1/2-1/2":
+        if draw:
+            self.pgn = str(self.pgn)+" 1/2-1/2"
             return (0,1)
         if self.board.result() == "1-0":
             return (1,0)
