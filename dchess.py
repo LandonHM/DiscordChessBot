@@ -8,14 +8,14 @@ import chess.engine
 import chess.svg
 import chess.pgn
 import cairosvg
-#general system imports
+#system imports
 import os
 import sys
 import re
 from datetime import datetime,timedelta
+#db imports
 import requests
 import mariadb
-from dotenv import load_dotenv
 #local imports
 from chess_game import ChessGame
 
@@ -160,6 +160,7 @@ class chess_cog(commands.Cog):
     )
     async def draw(self, ctx, *args):
         #see if can just replace the message with draw instead of rewritting play function
+
         fin = None
         idx = 0
         for idx in range(len(self.ongoing_games)):

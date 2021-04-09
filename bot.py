@@ -1,16 +1,13 @@
-#new things
 '''
 
 General things to add:
     maybe make a custom help/advanced help
     handle the draw case
 '''
-
 #discord imports
 import discord
 from discord.ext import commands
 import asyncio
-
 #general system imports
 import os
 import sys
@@ -19,10 +16,8 @@ from datetime import datetime,timedelta
 import requests
 import mariadb
 from dotenv import load_dotenv
-
 #local imports
 import dchess
-#global variables
 
 load_dotenv()
 #if arg log is sent when running, then output should be put into a log file
