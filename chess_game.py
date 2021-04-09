@@ -42,6 +42,7 @@ class ChessGame:
         self.prev2 = None
         self.turnMsg = None
         self.turnMsg2 = None
+        self.draw_message = None
 
         #saves the svg and pgn of the game, in order to save in db
         self.svg = None
@@ -62,36 +63,17 @@ class ChessGame:
     #Parses the input, plays the board on the internal board, then creates and sends the board image
     async def play_move(self, stri, id, msg, engine):
         try:
-            if (self.board.turn == chess.WHITE and self.playerWhite.id == id) or (self.board.turn == chess.BLACK and self.playerBlack.id  == id):
+            stri_l = stri.lower()
+            if (self.board.turn == chess.WHITE and self.playerWhite.id == id) or (self.board.turn == chess.BLACK and self.playerBlack.id  == id): #remove this and make it shift back 1
                 #push the move onto the board
                 #print(stri)
-                stri_l = stri.lower()
                 if stri_l == "castle":
                     self.board.push_san("O-O")
                 elif stri_l == "castlelong":
                     self.board.push_san("O-O-O")
                 elif stri_l == "draw":
-                    if self.board.can_claim_draw() and ((self.board.turn == chess.WHITE and self.playerWhite.id == id)  or (self.board.turn == chess.BLACK and self.playerBlack.id == id)):
+                    if self.board.fullmove_number > 1 and self.board.can_claim_draw():
                         return await self.end_game(True)
-
-                    if self.draw_offer:
-                        if (self.draw_offer_side and self.playerBlack.id == id) or (not self.draw_offer_side and self.playerWhite.id == id):
-                            #handle draw
-                            return await self.end_game(True)
-                    else:
-                        if self.draw_offer_side is None:
-                            if self.playerWhite.id == id:
-                                self.draw_offer = True
-                                self.draw_offer_side = True
-                                self.channel.send(f"Draw has been offered from <@!{self.playerWhite.id}>")
-                            else:
-                                self.draw_offer = True
-                                self.draw_offer_side = False
-                                self.channel.send(f"Draw has been offered from <@!{self.playerBlack.id}>")
-
-                elif stri_l == "ff" or stri_l == "forfeit" or stri_l == "resign":
-                    return
-
                 else:
                     self.board.push_san(stri)
 
@@ -134,6 +116,23 @@ class ChessGame:
                 else:
                     return None
             else:
+                #check if draw
+                if stri_l == "draw":
+                    if self.draw_offer:
+                        if (self.draw_offer_side and self.playerBlack.id == id) or (not self.draw_offer_side and self.playerWhite.id == id):
+                            return await self.end_game(True)
+                    else:
+                        if self.draw_offer_side is None:
+                            if self.playerWhite.id == id:
+                                self.draw_offer = True
+                                self.draw_offer_side = True
+                                self.draw_message = self.channel.send(f"Draw has been offered from <@!{self.playerWhite.id}>")
+                            else:
+                                self.draw_offer = True
+                                self.draw_offer_side = False
+                                self.draw_message = self.channel.send(f"Draw has been offered from <@!{self.playerBlack.id}>")
+                elif stri_i == "ff" or stri_i == "forfeit":
+                    return await self.end_game(False,True,self.playerWhite == id)
                 return None
         except ValueError:
             #move was invalid
@@ -154,7 +153,13 @@ class ChessGame:
             await self.attempts[m].delete()
         self.attempts = []
 
-    async def end_game(self, draw):
+        if not self.draw_message is None:
+            await self.draw_message.delete()
+            self.draw_message = None
+            self.draw_side = None
+            self.draw_offer = False
+
+    async def end_game(self, draw=None, forfeit=None, side=None):
         await self.channel.send("Game is over")
         self.pgn = chess.pgn.Game.from_board(self.board)
         self.pgn.headers.__delitem__("Event")
@@ -168,6 +173,14 @@ class ChessGame:
         if draw:
             self.pgn = str(self.pgn)+" 1/2-1/2"
             return (0,1)
+        elif forfeit:
+            if side:
+                self.pgn = str(self.pgn)+" 1-0"
+                return (1,0)
+            else:
+                self.pgn = str(self.pgn)+" 0-1"
+                return (0,0)
+
         if self.board.result() == "1-0":
             return (1,0)
         else:
