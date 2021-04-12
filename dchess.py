@@ -68,9 +68,12 @@ class chess_cog(commands.Cog):
                 self.ongoing_games.append(ChessGame(ctx.author, 0, ctx.channel, args[-1]))
                 await self.ongoing_games[-1].start_game()
             else:
-                #if the challenge is not the bot, just add the game to the challenges
                 now = datetime.now()
-                self.challenges.append((ctx.message.mentions, ctx.author, ctx.channel, now, args[-1]))
+                try:
+                    #Cannot challenge self, try to remove
+                    self.challenges.append((ctx.message.mentions.remove(ctx.author), ctx.author, ctx.channel, now, args[-1]))
+                except:
+                    self.challenges.append((ctx.message.mentions, ctx.author, ctx.channel, now, args[-1]))
 
     #process the accept command to accept a challenge
     @commands.command(
